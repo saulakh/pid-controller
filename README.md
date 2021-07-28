@@ -1,98 +1,91 @@
-# CarND-Controls-PID
-Self-Driving Car Engineer Nanodegree Program
+## PID Controller
+Self Driving Car Nanodegree Project
 
----
+### Project Overview
 
-## Dependencies
+For this project, a PID controller is used to continuously adjust the steering angle as the car drives around the track. The car needs to be able to stay within the lane through the entire track, and the maximum speed limit is 100 mph. The faster the car drives, the more challenging it becomes to steer smoothly.
 
-* cmake >= 3.5
- * All OSes: [click here for installation instructions](https://cmake.org/install/)
-* make >= 4.1(mac, linux), 3.81(Windows)
-  * Linux: make is installed by default on most Linux distros
-  * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
-  * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
-* gcc/g++ >= 5.4
-  * Linux: gcc / g++ is installed by default on most Linux distros
-  * Mac: same deal as make - [install Xcode command line tools]((https://developer.apple.com/xcode/features/)
-  * Windows: recommend using [MinGW](http://www.mingw.org/)
-* [uWebSockets](https://github.com/uWebSockets/uWebSockets)
-  * Run either `./install-mac.sh` or `./install-ubuntu.sh`.
-  * If you install from source, checkout to commit `e94b6e1`, i.e.
-    ```
-    git clone https://github.com/uWebSockets/uWebSockets 
-    cd uWebSockets
-    git checkout e94b6e1
-    ```
-    Some function signatures have changed in v0.14.x. See [this PR](https://github.com/udacity/CarND-MPC-Project/pull/3) for more details.
-* Simulator. You can download these from the [project intro page](https://github.com/udacity/self-driving-car-sim/releases) in the classroom.
+### Project Build Instructions
 
-Fellow students have put together a guide to Windows set-up for the project [here](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/files/Kidnapped_Vehicle_Windows_Setup.pdf) if the environment you have set up for the Sensor Fusion projects does not work for this project. There's also an experimental patch for windows in this [PR](https://github.com/udacity/CarND-PID-Control-Project/pull/3).
+This project uses the Term 3 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2), and the original project repository from Udacity can be found [here](https://github.com/udacity/CarND-PID-Control-Project).
 
-## Basic Build Instructions
+The main program can be built and run by doing the following from the project top directory:
 
-1. Clone this repo.
-2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-4. Run it: `./pid`. 
+1. mkdir build
+2. cd build
+3. cmake ..
+4. make
+5. ./path_planning
 
-Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
+### PID Overview
 
-## Editor Settings
+The PID controller is a closed feedback loop, continuously calculating the error between the target value and the measured value, and applying a correction to reduce the error. This correction is the sum of three responses: proportional, integral, and derivative:
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
+![image](https://user-images.githubusercontent.com/74683142/127356405-80d0254c-bcbd-487c-a9cd-da6fc16f1bfc.png)
 
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
+##### Proportional
 
-## Code Style
+This controller's response is proportional to the CTE (cross track error), which is the difference between the target value and the measured value. If the error is large, the control output will be proportionally large. As a result, this controller tends to overshoot and the response creates oscillations around the target value.
 
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
+##### Integral
 
-## Project Instructions and Rubric
+The integral controller's response is used to correct a continuous error, such as a steering bias due to wheel misalignment. In simulation, the car does not have any bias towards steering to the left or right, so the integral controller is not necessary for this project.
 
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
+##### Derivative
 
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/e8235395-22dd-4b87-88e0-d108c5e5bbf4/concepts/6a4d8d42-6a04-4aa6-b284-1697c0fd6562)
-for instructions and the project rubric.
+The derivative controller's response uses the difference between it's previous and current error, which allows it to dampen the oscillations from the proportional response. The greater the current rate of change is, the greater the dampening effect. As a result, this controller slows down how rapidly the error is being corrected. 
 
-## Hints!
+### Project Code
 
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
+The project files are [main.cpp](https://github.com/saulakh/pid-controller/blob/main/src/main.cpp) and [PID.cpp](https://github.com/saulakh/pid-controller/blob/main/src/PID.cpp), located in the ```src``` folder.
 
-## Call for IDE Profiles Pull Requests
+##### Update Error
 
-Help your fellow students!
+The update error function can be found in _PID.cpp_, and computes the proportional, integral, and derivative errors. The proportional error is the CTE, and the derivative error is the difference between the current CTE and the previous CTE. Since the previous error is equal to the proportional error, I calculated the derivative error before the proportional error updates to the new CTE value. Finally, the integral error is the sum of all of the CTE values.
 
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
+```
+d_error = cte - p_error;
+p_error = cte;
+i_error += cte;
+```
 
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
+##### Total Error
 
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
+The total error function can be found in _PID.cpp_, and computes the total sum of the proportional, integral, and derivative errors multiplied by their respective gains:
 
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
+```return -Kp * p_error - Ki * i_error - Kd * d_error;```
 
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
+##### Main.cpp
 
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
+The proportional, integral, and derivative coefficients are tuned in the _main.cpp_ file, and are initialized as Kp = 0.1, Ki = 0.0, and Kd = 2.5. By manually tuning these coefficients, the car was able to drive around the track but it was still swerving quite a bit. To smooth out the driving, I changed the PID coefficients based on speed, since the oscillations were worse at higher speeds. Since the Kp coefficient needed to be lower at higher speeds, I set it inversely proportional to the car's speed. For the Kd value, I started with the initial value and increased it directly proportional to the car's speed to help reduce the oscillations.
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+```
+// Change pid values based on speed
+if (speed >= 10) {
+  Kp = 1/speed;
+  Kd = 2.5 + speed/100;
+  cout << "Kp: " << Kp << endl;
+  cout << "Kd: " << Kd << endl;
+}
+```
 
+If the proportional gain was too high, the car would swerve too much and drive off the road. If the derivative gain was too high, or the proportional gain wasn't high enough, the car could be too slow to react to sudden sharp turns and drive off the road in that time.
+
+To resolve this issue, I added a negative throttle for steer values over 0.7, in addition to varying the PID coefficients with speed:
+
+```
+// Brake for sharper turns
+if (fabs(steer_value) > 0.7) {
+  throttle = -0.25;
+}
+```
+
+Adding the brakes helped the car stay in its lane for sharper turns. Another change I could have implemented was adjusting the throttle based on speed throughout the track, or adding a second PID controller to adjust the car's speed.
+
+### Project Results
+
+After making these changes, the car was able to drive around the track and stay in its lane, driving at approximately 25 - 30 mph.
+
+![pid](https://user-images.githubusercontent.com/74683142/127351770-36c945d8-92c5-4edd-90f1-0e1db2f20e79.gif)
+
+![pid2](https://user-images.githubusercontent.com/74683142/127351980-88410315-1374-46c0-ab4b-a9aa0fb06ca7.gif)
