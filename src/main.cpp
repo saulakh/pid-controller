@@ -41,7 +41,7 @@ int main() {
   
   double Kp = 0.1;
   double Ki = 0.0;
-  double Kd = 3.0;
+  double Kd = 2.5;
   
   pid.Init(Kp, Ki, Kd);
 
@@ -61,10 +61,10 @@ int main() {
         if (event == "telemetry") {
           // j[1] is the data JSON object
           double cte = std::stod(j[1]["cte"].get<string>());
-          //double speed = std::stod(j[1]["speed"].get<string>());
-          //double angle = std::stod(j[1]["steering_angle"].get<string>());
+          double speed = std::stod(j[1]["speed"].get<string>());
+          double angle = std::stod(j[1]["steering_angle"].get<string>());
           double steer_value;
-          double throttle = 0.3;
+          double throttle = 0.25;
           /**
            * TODO: Calculate steering value here, remember the steering value is
            *   [-1, 1].
@@ -72,9 +72,34 @@ int main() {
            *   Maybe use another PID controller to control the speed!
            */
           
+          cout << "Angle: " << angle << endl;
+          cout << "Speed: " << speed << endl;
+          
+          // Change pid values based on speed
+          if (speed >= 10) {
+            Kp = 1/speed;
+            Kd = 2.5 + speed/100;
+            cout << "Kp: " << Kp << endl;
+            cout << "Kd: " << Kd << endl;
+          }
+          
+          // Update error and steer value
           pid.UpdateError(cte);
           steer_value = pid.TotalError();
           
+          // Keep steer values within [-1, 1]
+          if (steer_value > 1) {
+            steer_value = 1;
+          }
+          if (steer_value < -1) {
+            steer_value = -1;
+          }
+          
+          // Brake for sharper turns
+          if (fabs(steer_value) > 0.7) {
+            throttle = -0.25;
+          }
+
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value 
                     << std::endl;
